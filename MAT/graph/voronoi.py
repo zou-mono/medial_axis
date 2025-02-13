@@ -6,7 +6,7 @@ from shapely import LineString, Point
 # from MAT.algebra import Algebra
 from MAT.graph.element import Element
 from MAT.graph.vertex import Vertex
-from MAT.gv import POINT_PRECISION, point_equals, point_duplicate
+from MAT.gv import POINT_PRECISION, POINT_PRECISION_PLACE
 
 
 class Mesh:
@@ -269,8 +269,7 @@ class VoronoiRegion:
         if vertex2 is None and geom is not None:
             vertex2 = Vertex(round(geom.coords[-1][0], POINT_PRECISION), round(geom.coords[-1][1], POINT_PRECISION))
 
-        if (not point_equals(np.array([vertex1.x, vertex1.y]), np.array([geom.coords[0][0], geom.coords[0][1]]))) or \
-                (not point_equals(np.array([vertex2.x, vertex2.y]), np.array([geom.coords[-1][0], geom.coords[-1][1]]))):
+        if (not point_duplicate(vertex1, geom.coords[0])) or (not point_duplicate(vertex2, geom.coords[-1])):
             reversed_coords = list(geom.coords)[::-1]
             geom = LineString(reversed_coords)
 
@@ -553,3 +552,40 @@ class VoronoiRegion:
         #     self._edges.current = v
 
         self._current = v
+
+
+def point_duplicate(pt1: [np.ndarray, Point, Vertex, tuple], pt2: [np.ndarray, Point, Vertex, tuple], tolerance=POINT_PRECISION):
+    if isinstance(pt1, Vertex):
+        pt1 = Point(pt1.x, pt1.y)
+    if isinstance(pt2, Vertex):
+        pt2 = Point(pt2.x, pt2.y)
+
+    if isinstance(pt1, np.ndarray):
+        pt1 = Point(pt1)
+    if isinstance(pt2, np.ndarray):
+        pt2 = Point(pt2)
+
+    if isinstance(pt1, tuple):
+        pt1 = Point(pt1)
+    if isinstance(pt2, tuple):
+        pt2 = Point(pt2)
+
+    if (isinstance(pt1, Point) and not isinstance(pt2, Point)) or (isinstance(pt2, Point) and not isinstance(pt1, Point)):
+        raise TypeError("Both input points must be either numpy arrays or shapely Points")
+
+    if pt1.distance(pt2) <= tolerance:
+        return True
+    else:
+        return False
+
+
+def point_equals(pt1: np.ndarray, pt2: np.ndarray, tolerance=POINT_PRECISION):
+    if pt1 is None or pt2 is None:
+        return False
+
+    pt1 = np.array([round(pt1[0], POINT_PRECISION_PLACE), round(pt1[1], POINT_PRECISION_PLACE)])
+    pt2 = np.array([round(pt2[0], POINT_PRECISION_PLACE), round(pt2[1], POINT_PRECISION_PLACE)])
+    if np.isclose(pt1, pt2, atol=tolerance).all():
+        return True
+    else:
+        return False

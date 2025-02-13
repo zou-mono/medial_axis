@@ -14,7 +14,7 @@ from MAT.graph.segment import Segment
 from MAT.graph.vertex import Vertex
 from MAT.graph.voronoi import VoronoiEdge
 
-from MAT.gv import EQUAL_TOLERANCE, EQUAL_RELATIVE_TOLERANCE, POINT_PRECISION, POINT_PRECISION_PLACE, point_equals
+from MAT.gv import EQUAL_TOLERANCE, EQUAL_RELATIVE_TOLERANCE, POINT_PRECISION, POINT_PRECISION_PLACE
 
 
 class Algebra:
@@ -23,14 +23,16 @@ class Algebra:
 
     @staticmethod
     def is_in_range(x_min, x, x_max, rel_tol=EQUAL_RELATIVE_TOLERANCE, abs_tol=EQUAL_TOLERANCE):
-        return (math.isclose(x_min, x, rel_tol=rel_tol, abs_tol=abs_tol) or x_min < x) and \
-            (math.isclose(x, x_max, rel_tol=rel_tol, abs_tol=abs_tol) or x < x_max)
+        # return (math.isclose(x_min, x, rel_tol=rel_tol, abs_tol=abs_tol) or x_min < x) and \
+        #     (math.isclose(x, x_max, rel_tol=rel_tol, abs_tol=abs_tol) or x < x_max)
+        return (math.isclose(x_min, x, abs_tol=abs_tol) or x_min < x) and \
+            (math.isclose(x, x_max, abs_tol=abs_tol) or x < x_max)
 
     # @staticmethod
     def bisector(self, e1: Union[Element, Vertex, Segment], e2: Union[Element, Vertex, Segment], is_ccw=True):
         geom = None
 
-        if e1.index == 3 and e2.index == 4:  # 17 6
+        if e1.index == 4 and e2.index == 11:  # 17 6
             print("bisector-debug:{}-{}".format(e1.index, e2.index))
         else:
             pass
@@ -56,8 +58,8 @@ class Algebra:
             if geom.is_empty or geom.length == 0 or (geom.coords[0] == geom.coords[-1] and len(geom.coords) == 2):
                 return None
 
-            geom = set_precision(geom, POINT_PRECISION, mode='pointwise')
-            ve = VoronoiEdge(geom=geom, left_element=e1, right_element=e2)
+            p_geom = set_precision(geom, POINT_PRECISION, mode='pointwise')
+            ve = VoronoiEdge(geom=p_geom, left_element=e1, right_element=e2)
             return ve
         else:
             return None

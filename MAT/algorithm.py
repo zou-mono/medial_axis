@@ -10,8 +10,8 @@ from MAT.algebra import Algebra
 from MAT.graph.element import Element
 from MAT.graph.segment import Segment
 from MAT.graph.vertex import Vertex
-from MAT.graph.voronoi import Mesh, VoronoiEdge, VoronoiRegion
-from MAT.gv import POINT_PRECISION_PLACE, point_equals, POINT_PRECISION
+from MAT.graph.voronoi import Mesh, VoronoiEdge, VoronoiRegion, point_duplicate
+from MAT.gv import POINT_PRECISION_PLACE, POINT_PRECISION
 from MAT.visualization.visualizer import Visualizer
 import copy
 
@@ -202,7 +202,7 @@ class Algorithm:
                 print("Left: [{}:{}], Right: [{}:{}]".format(e_left.index, e_left, e_right.index,
                                                              e_right))
 
-                if e_left.index == 12 and e_right.index == 5:  # 17 6
+                if e_left.index == 4 and e_right.index == 11:  # 17 6
                     print("debug:{}-{}".format(e_left.index, e_right.index))
                 else:
                     pass
@@ -235,9 +235,9 @@ class Algorithm:
                     if _ is not None:
                         bisector = _
 
-                        if point_equals(np.array([bisector.geom.coords[-1][0], bisector.geom.coords[-1][1]]),
-                                        extend_point):
+                        if point_duplicate(bisector.geom.coords[-1], extend_point):
                             reversed_coords = list(bisector.geom.coords)[::-1]
+                            reversed_coords[0] = tuple(extend_point)
                             bisector.geom = LineString(reversed_coords)
 
                         self.bisector_dict.setdefault((e_left.index, e_right.index), bisector)
@@ -260,7 +260,7 @@ class Algorithm:
         return c1.merge(c2)
 
     def select_voronoi_edge(self, bisector, e_left, e_right, extend_point):
-        if e_left.index == 6 and e_right.index == 11:  # 17 6
+        if e_left.index == 4 and e_right.index == 11:  # 17 6
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -281,8 +281,7 @@ class Algorithm:
 
             intersect_left = Algebra.get_intersection_point(ve_left.geom, bisector.geom)
             if not intersect_left is None:
-                if not point_equals(np.array([intersect_left.x, intersect_left.y]),
-                                    extend_point) and self.polygon.contains(intersect_left):
+                if not point_duplicate(intersect_left, extend_point) and self.polygon.contains(intersect_left):
                     e_left.region.current = ve_left.next
                     break
                 else:
@@ -303,8 +302,7 @@ class Algorithm:
 
             intersect_right = Algebra.get_intersection_point(ve_right.geom, bisector.geom)
             if not intersect_right is None:
-                if not point_equals(np.array([intersect_right.x, intersect_right.y]),
-                                    extend_point) and self.polygon.contains(intersect_right):
+                if not point_duplicate(intersect_right, extend_point) and self.polygon.contains(intersect_right):
                     e_right.region.current = ve_right.prev
                     break
                 else:
@@ -329,7 +327,7 @@ class Algorithm:
             return False, None, None, None, None
 
         elif intersect_left is None and intersect_right is not None:
-            if point_equals(np.array([intersect_right.x, intersect_right.y]), extend_point):
+            if point_duplicate(intersect_right, extend_point):
                 intersect_right = extend_point
             else:
                 intersect_right = np.array([intersect_right.x, intersect_right.y])
@@ -347,7 +345,7 @@ class Algorithm:
                 e_right = ve_right.right_element
 
         elif intersect_right is None and intersect_left is not None:
-            if point_equals(np.array([intersect_left.x, intersect_left.y]), extend_point):
+            if point_duplicate(intersect_left, extend_point):
                 intersect_left = extend_point
             else:
                 intersect_left = np.array([intersect_left.x, intersect_left.y])
@@ -369,8 +367,8 @@ class Algorithm:
             distance_left = bisector.geom.project(Point(intersect_left))
             distance_right = bisector.geom.project(Point(intersect_right))
 
-            if round(distance_left, POINT_PRECISION_PLACE - 1) == round(distance_right, POINT_PRECISION_PLACE - 1):
-                if point_equals(np.array([intersect_left.x, intersect_left.y]), extend_point):
+            if round(distance_left, POINT_PRECISION_PLACE) == round(distance_right, POINT_PRECISION_PLACE):
+                if point_duplicate(intersect_left, extend_point):
                     intersect_pt = extend_point
                 else:
                     intersect_pt = np.array([intersect_left.x, intersect_left.y])
@@ -399,7 +397,7 @@ class Algorithm:
                 extend_point = intersect_pt
             else:
                 if (distance_left < distance_right and distance_left > 0) or (distance_right == 0):
-                    if point_equals(np.array([intersect_left.x, intersect_left.y]), extend_point):
+                    if point_duplicate(intersect_left, extend_point):
                         intersect_left = extend_point
                     else:
                         intersect_left = np.array([intersect_left.x, intersect_left.y])
@@ -419,7 +417,7 @@ class Algorithm:
                         e_left = ve_left.right_element
 
                 elif (distance_right < distance_left and distance_right > 0) or (distance_left == 0):
-                    if point_equals(np.array([intersect_right.x, intersect_right.y]), extend_point):
+                    if point_duplicate(intersect_right, extend_point):
                         intersect_right = extend_point
                     else:
                         intersect_right = np.array([intersect_right.x, intersect_right.y])
@@ -504,10 +502,11 @@ class Algorithm:
         bs_origin, bs_end = Algebra.origin_and_end_point(bisector)
 
         if extend_point is not None:
-            if not point_equals(extend_point, np.array([bs_origin.x, bs_origin.y])) and not point_equals(extend_point,
-                                                                                                         np.array([
-                                                                                                             bs_end.x,
-                                                                                                             bs_end.y])):
+            # if not point_equals(extend_point, np.array([bs_origin.x, bs_origin.y])) and not point_equals(extend_point,
+            #                                                                                              np.array([
+            #                                                                                                  bs_end.x,
+            #                                                                                                  bs_end.y])):
+            if not point_duplicate(extend_point, bs_origin) and not point_duplicate(extend_point, bs_end):
                 return
 
         ve_left, _ = e_left.region.add_edge(bs_origin, bs_end, geom=bisector, only_create=True)
@@ -571,7 +570,8 @@ class Algorithm:
 
         print("update:[{}]-[{}]".format(split_ve.left_element, split_ve.right_element))
 
-        if not point_equals(np.array([bisector.geom.coords[0][0], bisector.geom.coords[0][1]]), intersect_point):
+        # if not point_equals(np.array([bisector.geom.coords[0][0], bisector.geom.coords[0][1]]), intersect_point):
+        if not point_duplicate(bisector.geom.coords[0], intersect_point):
             bisector.geom = substring(bisector.geom, 0, bisector.geom.project(Point(intersect_point)))
             coords = list(bisector.geom.coords)
             coords[-1] = (intersect_point[0], intersect_point[1])  # 修改最后一个点
@@ -601,7 +601,7 @@ class Algorithm:
 
         bs_origin, bs_end = Algebra.origin_and_end_point(bisector.geom)
 
-        if geom.length > 0:
+        if geom.length > POINT_PRECISION:
             # 有可能由于精度导致错误，所以手动更新首末节点
             coords = list(geom.coords)
             coords[0] = (origin.x, origin.y)  # 修改第一个点
@@ -615,7 +615,7 @@ class Algorithm:
         bs_ve_right.left_element = e_left
         bs_ve_right.right_element = e_right
 
-        if geom.length > 0:
+        if geom.length > POINT_PRECISION:
             new_ve, _ = region_main.add_edge(origin, end, geom=geom, only_create=True)
             new_twin_ve, _ = region_twin.add_edge(end, origin, geom=geom, only_create=True)
 
