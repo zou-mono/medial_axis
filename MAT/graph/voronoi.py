@@ -6,7 +6,7 @@ from shapely import LineString, Point
 # from MAT.algebra import Algebra
 from MAT.graph.element import Element
 from MAT.graph.vertex import Vertex
-from MAT.gv import POINT_PRECISION, POINT_PRECISION_PLACE
+from MAT.gv import POINT_PRECISION, POINT_PRECISION_PLACE, EQUAL_TOLERANCE
 
 
 class Mesh:
@@ -20,8 +20,11 @@ class Mesh:
         self.vertex_idx = index.Index()
 
     def add_vertex(self, vertex: Vertex = None):
+        if vertex in self.vertex_map:
+            return self.vertex_map[vertex]
+
         new_point = Point(vertex.x, vertex.y)
-        new_point_bbox = new_point.bounds  # 获取点的边框
+        new_point_bbox = (new_point.x - EQUAL_TOLERANCE, new_point.y - EQUAL_TOLERANCE, new_point.x + EQUAL_TOLERANCE, new_point.y + EQUAL_TOLERANCE) # 获取点的边框
 
         # 查询可能与新点重合的点
         possible_matches = list(self.vertex_idx.intersection(new_point_bbox))
@@ -36,6 +39,7 @@ class Mesh:
         # 如果没有重合点，则添加新点
         vertex.id = len(self.vertices)
         self.vertices.append(vertex)
+        self.vertex_map[vertex] = vertex
         self.vertex_idx.insert(len(self.vertices) - 1, new_point_bbox)
         return vertex
 
@@ -271,6 +275,8 @@ class VoronoiRegion:
 
         if (not point_duplicate(vertex1, geom.coords[0])) or (not point_duplicate(vertex2, geom.coords[-1])):
             reversed_coords = list(geom.coords)[::-1]
+            reversed_coords[0] = (vertex1.x, vertex1.y)
+            reversed_coords[-1] = (vertex2.x, vertex2.y)
             geom = LineString(reversed_coords)
 
         # 确保顶点存在
@@ -554,7 +560,7 @@ class VoronoiRegion:
         self._current = v
 
 
-def point_duplicate(pt1: [np.ndarray, Point, Vertex, tuple], pt2: [np.ndarray, Point, Vertex, tuple], tolerance=POINT_PRECISION):
+def point_duplicate(pt1: [np.ndarray, Point, Vertex, tuple], pt2: [np.ndarray, Point, Vertex, tuple], tolerance=EQUAL_TOLERANCE):
     if isinstance(pt1, Vertex):
         pt1 = Point(pt1.x, pt1.y)
     if isinstance(pt2, Vertex):

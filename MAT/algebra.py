@@ -718,10 +718,8 @@ class Algebra:
             # 计算叉积并累加
             total_cross += cross
 
-        if total_cross > 0:
-            return 1  # 点在线的左边
-        elif total_cross < 0:
-            return -1  # 点在线的右边
+        if total_cross != 0:
+            return total_cross  # 点在线的右边
         else:
             # 如果点不在任何线段的左边或右边，可能在同一直线上
             return 0

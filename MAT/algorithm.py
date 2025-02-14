@@ -260,7 +260,7 @@ class Algorithm:
         return c1.merge(c2)
 
     def select_voronoi_edge(self, bisector, e_left, e_right, extend_point):
-        if e_left.index == 4 and e_right.index == 11:  # 17 6
+        if e_left.index == 5 and e_right.index == 9:  # 17 6
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -315,7 +315,7 @@ class Algorithm:
 
     def update_voronoi(self, bisector, ve_left, ve_right, intersect_left, intersect_right, e_left, e_right,
                        extend_point):
-        if e_left.index == 0 and e_right.index == 20:
+        if e_left.index == 5 and e_right.index == 9:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -563,17 +563,18 @@ class Algorithm:
     # left_or_right表示ve是在bisector左侧还是右侧
     def update_voronoi_edges(self, bisector, split_ve, intersect_point, e_left, e_right,
                              left_or_right: Literal['L', 'R'], add_to_tail=True):
-        if e_left.index == 12 and e_right.index == 5:
+        if e_left.index == 3 and e_right.index == 14:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
 
         print("update:[{}]-[{}]".format(split_ve.left_element, split_ve.right_element))
 
+        origin_bisector_geom = bisector.geom
         # if not point_equals(np.array([bisector.geom.coords[0][0], bisector.geom.coords[0][1]]), intersect_point):
-        if not point_duplicate(bisector.geom.coords[0], intersect_point):
-            bisector.geom = substring(bisector.geom, 0, bisector.geom.project(Point(intersect_point)))
-            coords = list(bisector.geom.coords)
+        if not point_duplicate(origin_bisector_geom.coords[0], intersect_point):
+            bisector_geom = substring(origin_bisector_geom, 0, origin_bisector_geom.project(Point(intersect_point)))
+            coords = list(bisector_geom.coords)
             coords[-1] = (intersect_point[0], intersect_point[1])  # 修改最后一个点
             bisector.geom = LineString(coords)
 
