@@ -2,8 +2,8 @@ import os.path
 from typing import Literal
 
 import numpy as np
-from shapely import Polygon, Point, LineString, set_precision
-from shapely.geometry import mapping
+from shapely import Polygon, Point, LineString, set_precision, simplify
+from shapely.geometry import mapping, polygon
 from shapely.ops import substring
 
 from MAT.algebra import Algebra
@@ -45,6 +45,7 @@ class Algorithm:
         self.is_ccw = True if Algebra.is_ccw(points) else False
         self.polygon = poly
         self.polygon = set_precision(self.polygon, POINT_PRECISION, mode='pointwise')
+        self.polygon = simplify(self.polygon, POINT_PRECISION, preserve_topology=True)
 
         chains = self.generate_chains(points, self.is_ccw)
 
@@ -202,7 +203,7 @@ class Algorithm:
                 print("Left: [{}:{}], Right: [{}:{}]".format(e_left.index, e_left, e_right.index,
                                                              e_right))
 
-                if e_left.index == 4 and e_right.index == 11:  # 17 6
+                if e_left.index == 3 and e_right.index == 14:  # 17 6
                     print("debug:{}-{}".format(e_left.index, e_right.index))
                 else:
                     pass
@@ -260,7 +261,7 @@ class Algorithm:
         return c1.merge(c2)
 
     def select_voronoi_edge(self, bisector, e_left, e_right, extend_point):
-        if e_left.index == 5 and e_right.index == 9:  # 17 6
+        if e_left.index == 5 and e_right.index == 8:  # 17 6
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -508,6 +509,8 @@ class Algorithm:
             #                                                                                                  bs_end.y])):
             if not point_duplicate(extend_point, bs_origin) and not point_duplicate(extend_point, bs_end):
                 return
+            elif point_duplicate(bs_origin, bs_end):
+                return
 
         ve_left, _ = e_left.region.add_edge(bs_origin, bs_end, geom=bisector, only_create=True)
         ve_right, _ = e_right.region.add_edge(bs_end, bs_origin, geom=bisector, only_create=True)
@@ -573,7 +576,7 @@ class Algorithm:
         origin_bisector_geom = bisector.geom
         # if not point_equals(np.array([bisector.geom.coords[0][0], bisector.geom.coords[0][1]]), intersect_point):
         if not point_duplicate(origin_bisector_geom.coords[0], intersect_point):
-            bisector_geom = substring(origin_bisector_geom, 0, origin_bisector_geom.project(Point(intersect_point)))
+            bisector_geom = Algebra.split_line_by_distance(origin_bisector_geom, 0, origin_bisector_geom.project(Point(intersect_point)))
             coords = list(bisector_geom.coords)
             coords[-1] = (intersect_point[0], intersect_point[1])  # 修改最后一个点
             bisector.geom = LineString(coords)
@@ -596,7 +599,9 @@ class Algorithm:
             # del self.mesh.vertex_map[ve.origin]
 
         # 更新 ve.geom
-        geom = substring(split_ve.geom, origin_dist, end_dist)
+        # geom = substring(split_ve.geom, origin_dist, end_dist)
+        # geom = set_precision(geom, POINT_PRECISION, mode='pointwise')
+        geom = Algebra.split_line_by_distance(split_ve.geom, origin_dist, end_dist)
         region_main = split_ve.region
         region_twin = split_ve.twin.region
 

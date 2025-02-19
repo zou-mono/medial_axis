@@ -3,10 +3,9 @@ from decimal import Decimal
 import numpy as np
 from shapely import Point
 
-EQUAL_TOLERANCE = 1e-4
 EQUAL_RELATIVE_TOLERANCE = 1e-5
-POINT_PRECISION = 1e-5
-
+POINT_PRECISION = 1e-3
+EQUAL_TOLERANCE = 10*POINT_PRECISION
 
 def count_decimal_places(num):
     # 将浮点数转换为Decimal对象

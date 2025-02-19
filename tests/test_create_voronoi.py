@@ -1,5 +1,6 @@
 import os
 
+import shapely.geometry.polygon
 from shapely import LineString
 from shapely.geometry import mapping
 
@@ -26,8 +27,8 @@ def test_create_voronoi_simple_polygon(simple_polygon):
     algo = Voronoi()
     poly, param = simple_polygon
 
-    if not param:
-        algo.create_voronoi_diagram(poly)
+    # if not param:
+    algo.create_voronoi_diagram(poly)
 
 
 def test_shapefile_polygon():
@@ -69,6 +70,7 @@ def test_shapefile_polygon():
             #     .savefig(outpath, "{}_{}".format(icount, icount + 1))
 
             algo = Voronoi()
+            # shapely_polygon = shapely.geometry.polygon.orient(shapely_polygon, sign=1)
             algo.create_voronoi_diagram(shapely_polygon)
 
             print(icount)
