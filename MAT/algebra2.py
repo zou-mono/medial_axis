@@ -14,7 +14,7 @@ from MAT.graph.segment import Segment
 from MAT.graph.vertex import Vertex
 from MAT.graph.voronoi import VoronoiEdge, point_duplicate
 
-from MAT.gv import EQUAL_TOLERANCE, EQUAL_RELATIVE_TOLERANCE, POINT_PRECISION, POINT_PRECISION_PLACE, ANGLE_DIFF_RADIANS
+from MAT.gv import EQUAL_TOLERANCE, EQUAL_RELATIVE_TOLERANCE, POINT_PRECISION, POINT_PRECISION_PLACE
 
 
 class Algebra:
@@ -32,10 +32,10 @@ class Algebra:
     def bisector(self, e1: Union[Element, Vertex, Segment], e2: Union[Element, Vertex, Segment], is_ccw=True):
         geom = None
 
-        if e1.index == 6 and e2.index == 8:  # 17 6
-            print("bisector-debug:{}-{}".format(e1.index, e2.index))
-        else:
-            pass
+        # if e1.index == 5 and e2.index == 8:  # 17 6
+        #     print("bisector-debug:{}-{}".format(e1.index, e2.index))
+        # else:
+        #     pass
 
         if isinstance(e1, Vertex) and isinstance(e2, Segment):
             edge = Algebra._handle_vertex_segment(e1, e2, is_ccw)
@@ -133,7 +133,6 @@ class Algebra:
 
             return b_collinear, Ray(origin, direction)
 
-        # 如果两条线段存在共同端点，那就不需要再计算起始点
         if segment1.end.key == segment2.origin.key or segment1.origin.key == segment2.end.key:
             # 根据情况确定起始点和对称线段的端点
             if segment1.end.key == segment2.origin.key:
@@ -143,61 +142,73 @@ class Algebra:
 
             origin = np.array([start_vertex.x, start_vertex.y])
 
-            # # 计算距离并生成角平分线
-            # distance_A = np.linalg.norm(np.array([pt_A.x, pt_A.y]) - origin)
-            # distance_B = np.linalg.norm(np.array([pt_B.x, pt_B.y]) - origin)
+            # 计算距离并生成角平分线
+            distance_A = np.linalg.norm(np.array([pt_A.x, pt_A.y]) - origin)
+            distance_B = np.linalg.norm(np.array([pt_B.x, pt_B.y]) - origin)
 
             b_collinear, bisector_ray = calculate_bisector(start_vertex, pt_A, pt_B)
 
-            # if not b_collinear:
-                # # 选择较短的线段
-                # short_pt, short_seg = (pt_A, segment1) if distance_A <= distance_B else (pt_B, segment2)
-                #
-                # # 计算交点
-                # ray2 = Algebra._handle_vertex_segment(short_pt, short_seg, is_ccw)
-                # intersection_point = Algebra.intersection(ray2, bisector_ray)
-                #
-                # if intersection_point is not None:
-                #     if segment1.end.key == segment2.origin.key:
-                #         return Segment(Vertex(origin[0], origin[1]), Vertex(intersection_point[0], intersection_point[1]))
-                #     else:
-                #         return Segment(Vertex(intersection_point[0], intersection_point[1]), Vertex(origin[0], origin[1]))
-                # else:
-                #     return None
+            # # 选择较短的线段
+            # short_pt, short_seg = (pt_A, segment1) if distance_A <= distance_B else (pt_B, segment2)
+            #
+            # # 计算交点
+            # ray2 = Algebra._handle_vertex_segment(short_pt, short_seg, is_ccw)
+            # intersection_point = Algebra.intersection(ray2, bisector_ray)
+            #
+            # if intersection_point is not None:
+            #     if segment1.end.key == segment2.origin.key:
+            #         return Segment(Vertex(origin[0], origin[1]), Vertex(intersection_point[0], intersection_point[1]))
+            #     else:
+            #         return Segment(Vertex(intersection_point[0], intersection_point[1]), Vertex(origin[0], origin[1]))
             # else:
-            geom = Algebra.get_segments_from_bounds(bounds, bisector_ray)
-            if isinstance(geom, LineString):
-                return Segment(Vertex(origin[0], origin[1]), Vertex(geom.coords[-1][0], geom.coords[-1][1]))
+            #     return None
+
+            if not b_collinear:
+                # 选择较短的线段
+                short_pt, short_seg = (pt_A, segment1) if distance_A <= distance_B else (pt_B, segment2)
+
+                # 计算交点
+                ray2 = Algebra._handle_vertex_segment(short_pt, short_seg, is_ccw)
+                intersection_point = Algebra.intersection(ray2, bisector_ray)
+
+                if intersection_point is not None:
+                    if segment1.end.key == segment2.origin.key:
+                        return Segment(Vertex(origin[0], origin[1]), Vertex(intersection_point[0], intersection_point[1]))
+                    else:
+                        return Segment(Vertex(intersection_point[0], intersection_point[1]), Vertex(origin[0], origin[1]))
+                else:
+                    return None
             else:
-                return None
-        else:
-            start_vertex = Algebra.intersection_between_segments(segment1, segment2)
-            sorted_points = None
-            if start_vertex is None:  # 两条线平行
-                M = [(segment1.origin.x + segment1.end.x + segment2.origin.x + segment2.end.x) / 4,
-                     (segment1.origin.y + segment1.end.y + segment2.origin.y + segment2.end.y) / 4]
-                start_vertex = Vertex(M[0], M[1])
-                direction = np.array([segment1.end.x - segment1.origin.x, segment1.end.y - segment1.origin.y])
-
-                bisector_ray = Line(start_vertex, direction)
-
                 geom = Algebra.get_segments_from_bounds(bounds, bisector_ray)
+                if isinstance(geom, LineString):
+                    return Segment(Vertex(origin[0], origin[1]), Vertex(geom.coords[-1][0], geom.coords[-1][1]))
+                else:
+                    return None
 
-                # sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
-            else:
-                _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
-                in_segment, _ = Algebra._find_in_segment(segment1, segment2, start_vertex)
+        start_vertex = Algebra.intersection_between_segments(segment1, segment2)
+        sorted_points = None
+        if start_vertex is None:  # 两条线平行
+            M = [(segment1.origin.x + segment1.end.x + segment2.origin.x + segment2.end.x) / 4,
+                 (segment1.origin.y + segment1.end.y + segment2.origin.y + segment2.end.y) / 4]
+            start_vertex = Vertex(M[0], M[1])
+            direction = np.array([segment1.end.x - segment1.origin.x, segment1.end.y - segment1.origin.y])
 
-                if in_segment is None:
-                    # 两条线段不平行且不共点，则取四个端点到平分射线交点的中间段作为bisector的范围
-                    sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
+            bisector_ray = Line(start_vertex, direction)
+            sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
+        else:
+            _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
+            in_segment, _ = Algebra._find_in_segment(segment1, segment2, start_vertex)
 
-            if sorted_points is None:
-                return None
-            else:
-                new_seg = Segment(Vertex(sorted_points[1][0], sorted_points[1][1]),
-                                  Vertex(sorted_points[2][0], sorted_points[2][1]))
-                return new_seg
+            if in_segment is None:
+                # 两条线段不平行且不共点，则取四个端点到平分射线交点的中间段作为bisector的范围
+                sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
+
+        if sorted_points is None:
+            return None
+        else:
+            new_seg = Segment(Vertex(sorted_points[1][0], sorted_points[1][1]),
+                              Vertex(sorted_points[2][0], sorted_points[2][1]))
+            return new_seg
 
     @staticmethod
     def _find_in_segment(segment1, segment2, start_vertex):
@@ -748,10 +759,6 @@ class Algebra:
             [d1[1], -d2[1]]
         ])
         b = np.array([x3 - x1, y3 - y1])
-
-        # 两条线平行
-        if abs(np.cross(d1, d2)) <= np.sin(ANGLE_DIFF_RADIANS) * np.linalg.norm(d1) * np.linalg.norm(d2):
-            return None
 
         try:
             # 求解线性方程组

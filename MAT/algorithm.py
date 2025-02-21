@@ -203,7 +203,7 @@ class Algorithm:
                 print("Left: [{}:{}], Right: [{}:{}]".format(e_left.index, e_left, e_right.index,
                                                              e_right))
 
-                if e_left.index == 3 and e_right.index == 14:  # 17 6
+                if e_left.index == 6 and e_right.index == 8:  # 17 6
                     print("debug:{}-{}".format(e_left.index, e_right.index))
                 else:
                     pass
@@ -236,10 +236,10 @@ class Algorithm:
                     if _ is not None:
                         bisector = _
 
-                        if point_duplicate(bisector.geom.coords[-1], extend_point):
-                            reversed_coords = list(bisector.geom.coords)[::-1]
-                            reversed_coords[0] = tuple(extend_point)
-                            bisector.geom = LineString(reversed_coords)
+                        # if point_duplicate(bisector.geom.coords[-1], extend_point):
+                        #     reversed_coords = list(bisector.geom.coords)[::-1]
+                        #     reversed_coords[0] = tuple(extend_point)
+                        #     bisector.geom = LineString(reversed_coords)
 
                         self.bisector_dict.setdefault((e_left.index, e_right.index), bisector)
                     else:
@@ -316,7 +316,7 @@ class Algorithm:
 
     def update_voronoi(self, bisector, ve_left, ve_right, intersect_left, intersect_right, e_left, e_right,
                        extend_point):
-        if e_left.index == 5 and e_right.index == 9:
+        if e_left.index == 5 and e_right.index == 8:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -495,7 +495,7 @@ class Algorithm:
         if bisector is None:
             return
 
-        if e_left.index == 1 and e_right.index == 2:
+        if e_left.index == 5 and e_right.index == 8:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
