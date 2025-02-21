@@ -4,7 +4,7 @@ import numpy as np
 import shapely
 from matplotlib import pyplot as plt
 from numpy import linspace
-from shapely import LineString
+from shapely import LineString, Polygon
 from shapely.geometry import mapping
 
 from MAT.graph.line import Ray, Parabola
@@ -387,7 +387,7 @@ def test_segments_intersection(simple_polygon2):
     e1 = Segment(v0, v1, 1)
     e2 = Segment(v1, v2, 2)
 
-    alg = Algebra()
+    alg = Algebra(polygon.bounds)
 
     ray1 = alg.bisector(e1, e2, is_ccw=params).geom
 
@@ -396,4 +396,30 @@ def test_segments_intersection(simple_polygon2):
             .plot_polygon(polygon) \
             .plot_bisector(ray1) \
             .show()
+
+def test_segment_segment():
+    v0 = Vertex(0, 0, 0)
+    v1 = Vertex(1, 0.5, 1)
+    v2 = Vertex(0, 1, 2)
+    v3 = Vertex(1, 1, 3)
+
+    pts = ((v0.x, v0.y), (v1.x, v1.y), (v2.x, v2.y), (v3.x, v3.y))
+
+    e1 = Segment(v0, v1, 1)
+    e2 = Segment(v2, v3, 2)
+
+    polygon = Polygon([(-2, -2), (2, -2), (2, 2), (-2, 2), (-2, -2)])
+    alg = Algebra(polygon.bounds)
+
+    ray1 = alg.bisector(e1, e2, is_ccw=False).geom
+
+    if isinstance(ray1, LineString):
+        Visualizer(polygon) \
+            .plot_polygon(polygon) \
+            .plot_bisector(ray1) \
+            .plot_intersection(pts, label=True) \
+            .show()
+
+    # Algebra._handle_segment_segment((-2, -2, 2, 2), e1, e2, is_ccw=True)
+
 

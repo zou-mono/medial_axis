@@ -121,91 +121,59 @@ class Algebra:
             vector2 = np.array([seg2_end.x - origin.x, seg2_end.y - origin.y])
             direction = Algebra.normalize(Algebra.normalize(vector1) + Algebra.normalize(vector2))
 
-            b_collinear = False
-
-            # 如果是两条边夹角180度的共线情况
+            # 共线情况处理
             if np.isnan(direction).all():
-                b_collinear = True
-                if is_ccw:
-                    direction = np.array([0, 1])
-                else:
-                    direction = np.array([0, -1])
+                direction = np.array([0, 1] if is_ccw else [0, -1])
+                return True, Ray(origin, direction)
 
-            return b_collinear, Ray(origin, direction)
+            return False, Ray(origin, direction)
 
-        # 如果两条线段存在共同端点，那就不需要再计算起始点
+        def get_segment_from_bisector(bounds, bisector_ray):
+            geom = Algebra.get_segments_from_bounds(bounds, bisector_ray)
+            if isinstance(geom, LineString):
+                return Segment(Vertex(geom.coords[0][0], geom.coords[0][1]), Vertex(geom.coords[-1][0], geom.coords[-1][1]))
+            return None
+
+        # 处理两条线段共点的情况
         if segment1.end.key == segment2.origin.key or segment1.origin.key == segment2.end.key:
-            # 根据情况确定起始点和对称线段的端点
-            if segment1.end.key == segment2.origin.key:
-                start_vertex, pt_A, pt_B = segment1.end, segment1.origin, segment2.end
-            else:
-                start_vertex, pt_A, pt_B = segment1.origin, segment1.end, segment2.origin
-
-            origin = np.array([start_vertex.x, start_vertex.y])
-
-            # # 计算距离并生成角平分线
-            # distance_A = np.linalg.norm(np.array([pt_A.x, pt_A.y]) - origin)
-            # distance_B = np.linalg.norm(np.array([pt_B.x, pt_B.y]) - origin)
+            start_vertex, pt_A, pt_B = (
+                (segment1.end, segment1.origin, segment2.end) if segment1.end.key == segment2.origin.key else
+                (segment1.origin, segment1.end, segment2.origin)
+            )
 
             b_collinear, bisector_ray = calculate_bisector(start_vertex, pt_A, pt_B)
 
-            # if not b_collinear:
-                # # 选择较短的线段
-                # short_pt, short_seg = (pt_A, segment1) if distance_A <= distance_B else (pt_B, segment2)
-                #
-                # # 计算交点
-                # ray2 = Algebra._handle_vertex_segment(short_pt, short_seg, is_ccw)
-                # intersection_point = Algebra.intersection(ray2, bisector_ray)
-                #
-                # if intersection_point is not None:
-                #     if segment1.end.key == segment2.origin.key:
-                #         return Segment(Vertex(origin[0], origin[1]), Vertex(intersection_point[0], intersection_point[1]))
-                #     else:
-                #         return Segment(Vertex(intersection_point[0], intersection_point[1]), Vertex(origin[0], origin[1]))
-                # else:
-                #     return None
-            # else:
-            geom = Algebra.get_segments_from_bounds(bounds, bisector_ray)
-            if isinstance(geom, LineString):
-                return Segment(Vertex(origin[0], origin[1]), Vertex(geom.coords[-1][0], geom.coords[-1][1]))
-            else:
-                return None
-        else:
-            start_vertex = Algebra.intersection_between_segments(segment1, segment2)
-            sorted_points = None
-            if start_vertex is None:  # 两条线平行
-                M = [(segment1.origin.x + segment1.end.x + segment2.origin.x + segment2.end.x) / 4,
-                     (segment1.origin.y + segment1.end.y + segment2.origin.y + segment2.end.y) / 4]
-                start_vertex = Vertex(M[0], M[1])
-                direction = np.array([segment1.end.x - segment1.origin.x, segment1.end.y - segment1.origin.y])
+            return get_segment_from_bisector(bounds, bisector_ray)
 
-                bisector_ray = Line(start_vertex, direction)
+        # 处理两条线段平行的情况
+        start_vertex = Algebra.intersection_between_segments(segment1, segment2)
+        if start_vertex is None:
+            # 计算中点作为起点
+            M = np.mean([[segment1.origin.x, segment1.end.x], [segment1.origin.y, segment1.end.y],
+                         [segment2.origin.x, segment2.end.x], [segment2.origin.y, segment2.end.y]], axis=1)
+            start_vertex = Vertex(*M)
+            direction = np.array([segment1.end.x - segment1.origin.x, segment1.end.y - segment1.origin.y])
 
-                geom = Algebra.get_segments_from_bounds(bounds, bisector_ray)
+            bisector_ray = Line(start_vertex, direction)
+            return get_segment_from_bisector(bounds, bisector_ray)
 
-                # sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
-            else:
-                _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
-                in_segment, _ = Algebra._find_in_segment(segment1, segment2, start_vertex)
+        # 处理非共点和非平行的情况
+        _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
+        return get_segment_from_bisector(bounds, bisector_ray)
 
-                if in_segment is None:
-                    # 两条线段不平行且不共点，则取四个端点到平分射线交点的中间段作为bisector的范围
-                    sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
-
-            if sorted_points is None:
-                return None
-            else:
-                new_seg = Segment(Vertex(sorted_points[1][0], sorted_points[1][1]),
-                                  Vertex(sorted_points[2][0], sorted_points[2][1]))
-                return new_seg
-
+    #  判断两条segment的交点是否在某条segment内部
     @staticmethod
     def _find_in_segment(segment1, segment2, start_vertex):
         for segment in [segment1, segment2]:
             vector1 = np.array([segment.origin.x - start_vertex.x, segment.origin.y - start_vertex.y])
             vector2 = np.array([segment.end.x - start_vertex.x, segment.end.y - start_vertex.y])
-            if math.isclose(abs(Algebra.angle_between_vecters2(vector1, vector2)), 180, abs_tol=EQUAL_TOLERANCE):
+
+            direction = Algebra.normalize(Algebra.normalize(vector1) + Algebra.normalize(vector2))
+
+            if np.isnan(direction).all():
                 return segment, segment1 if segment == segment2 else segment2
+            # if math.isclose(abs(Algebra.angle_between_vecters2(vector1, vector2)), 180, abs_tol=1):
+            #     return segment, segment1 if segment == segment2 else segment2
         return None, None
 
     @staticmethod
