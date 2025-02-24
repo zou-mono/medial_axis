@@ -4,7 +4,7 @@ import numpy as np
 from shapely import Point
 
 EQUAL_RELATIVE_TOLERANCE = 1e-5
-POINT_PRECISION = 1e-3
+POINT_PRECISION = 1e-5
 EQUAL_TOLERANCE = 10*POINT_PRECISION
 PERPENDICULAR_ANGULAR_TOLERANCE = 1  # 判断两条线是否平行的角度容差，如果角度差小于这个值，则认为两条线平行
 PI = 3.1415926

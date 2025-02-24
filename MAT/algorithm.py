@@ -11,7 +11,7 @@ from MAT.graph.element import Element
 from MAT.graph.segment import Segment
 from MAT.graph.vertex import Vertex
 from MAT.graph.voronoi import Mesh, VoronoiEdge, VoronoiRegion, point_duplicate
-from MAT.gv import POINT_PRECISION_PLACE, POINT_PRECISION
+from MAT.gv import POINT_PRECISION_PLACE, POINT_PRECISION, EQUAL_TOLERANCE
 from MAT.visualization.visualizer import Visualizer
 import copy
 
@@ -203,7 +203,7 @@ class Algorithm:
                 print("Left: [{}:{}], Right: [{}:{}]".format(e_left.index, e_left, e_right.index,
                                                              e_right))
 
-                if e_left.index == 6 and e_right.index == 8:  # 17 6
+                if e_left.index == 5 and e_right.index == 18:  # 17 6
                     print("debug:{}-{}".format(e_left.index, e_right.index))
                 else:
                     pass
@@ -316,7 +316,7 @@ class Algorithm:
 
     def update_voronoi(self, bisector, ve_left, ve_right, intersect_left, intersect_right, e_left, e_right,
                        extend_point):
-        if e_left.index == 5 and e_right.index == 8:
+        if e_left.index == 0 and e_right.index == 2:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -566,7 +566,7 @@ class Algorithm:
     # left_or_right表示ve是在bisector左侧还是右侧
     def update_voronoi_edges(self, bisector, split_ve, intersect_point, e_left, e_right,
                              left_or_right: Literal['L', 'R'], add_to_tail=True):
-        if e_left.index == 3 and e_right.index == 14:
+        if e_left.index == 7 and e_right.index == 14:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -607,7 +607,7 @@ class Algorithm:
 
         bs_origin, bs_end = Algebra.origin_and_end_point(bisector.geom)
 
-        if geom.length > POINT_PRECISION:
+        if geom.length > EQUAL_TOLERANCE:
             # 有可能由于精度导致错误，所以手动更新首末节点
             coords = list(geom.coords)
             coords[0] = (origin.x, origin.y)  # 修改第一个点

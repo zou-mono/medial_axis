@@ -32,15 +32,15 @@ class Algebra:
     def bisector(self, e1: Union[Element, Vertex, Segment], e2: Union[Element, Vertex, Segment], is_ccw=True):
         geom = None
 
-        if e1.index == 6 and e2.index == 8:  # 17 6
+        if e1.index == 5 and e2.index == 18:  # 17 6
             print("bisector-debug:{}-{}".format(e1.index, e2.index))
         else:
             pass
 
         if isinstance(e1, Vertex) and isinstance(e2, Segment):
-            edge = Algebra._handle_vertex_segment(e1, e2, is_ccw)
+            edge = Algebra._handle_vertex_segment(self._bounds, e1, e2, is_ccw)
         elif isinstance(e1, Segment) and isinstance(e2, Vertex):
-            edge = Algebra._handle_vertex_segment(e2, e1, is_ccw)
+            edge = Algebra._handle_vertex_segment(self._bounds, e2, e1, is_ccw)
         elif isinstance(e1, Segment) and isinstance(e2, Segment):
             edge = Algebra._handle_segment_segment(self._bounds, e1, e2, is_ccw)
         elif isinstance(e1, Vertex) and isinstance(e2, Vertex):
@@ -85,8 +85,10 @@ class Algebra:
                 return
             x = px + t * dx
             y = py + t * dy
-            if Algebra.is_in_range(x_min, x, x_max) and Algebra.is_in_range(y_min, y, y_max):
-                intersections.append((x, y))
+
+            if len(intersections) < 2:
+                if Algebra.is_in_range(x_min, x, x_max) and Algebra.is_in_range(y_min, y, y_max):
+                    intersections.append((x, y))
 
         if dx != 0:
             check_intersection((x_min - px) / dx, x_min, None)
@@ -101,7 +103,18 @@ class Algebra:
         # 对于直线情况，返回两个交点；对于射线情况，返回起点和射线方向上的第一个交点
         if isinstance(edge, Ray):
             if len(intersections) > 0:
-                return LineString((start_point, intersections[0]))
+                px, py = start_point
+                if Algebra.is_in_range(x_min, px, x_max) and Algebra.is_in_range(y_min, py, y_max):
+                    return LineString((start_point, intersections[0]))
+                else:
+                    if len(intersections) == 2:
+                        if np.dot(edge.direction,
+                                  np.array([intersections[0][0] - intersections[1][0], intersections[0][1] - intersections[1][1]])) > 0:
+                            return LineString((intersections[1], intersections[0]))
+                        else:
+                            return LineString((intersections[0], intersections[1]))
+                    else:
+                        return None
             else:
                 return None
         else:
@@ -142,7 +155,6 @@ class Algebra:
             )
 
             b_collinear, bisector_ray = calculate_bisector(start_vertex, pt_A, pt_B)
-
             return get_segment_from_bisector(bounds, bisector_ray)
 
         # 处理两条线段平行的情况
@@ -198,7 +210,7 @@ class Algebra:
         return Line(Vertex(midpoint[0], midpoint[1]), perpendicular_direction)
 
     @staticmethod
-    def _handle_vertex_segment(vertex, segment, is_ccw):
+    def _handle_vertex_segment(bounds, vertex, segment, is_ccw):
         if vertex.key == segment.origin.key:
             vector = np.array([segment.end.x - segment.origin.x, segment.end.y - segment.origin.y])
             direction = Algebra.compute_direction(vector, is_ccw)
@@ -823,14 +835,40 @@ class Algebra:
         return Point(H), t
 
     @staticmethod
-    def split_line_by_point(split_point, line, tor=EQUAL_TOLERANCE):
-        nearest_point = nearest_points(split_point, line)[0]
+    def split_line_by_point(split_point, line, tor=2*EQUAL_TOLERANCE):
+        nearest_point = nearest_points(split_point, line)[1]
 
         if nearest_point.distance(split_point) > tor:
             return None
 
-        res = split(snap(line, nearest_point, 10*tor), nearest_point)
-        return res
+        buffer = nearest_point.buffer(tor)
+        line_segments = split(line, buffer)
+        line_segments = [set_precision(seg, POINT_PRECISION, mode='pointwise') for seg in list(line_segments.geoms)]
+        results = [x for x in list(line_segments) if x.length >= tor]
+
+        if len(results) == 3:
+            results.pop(1)
+
+        # Create two new segments with the split point
+        def create_segment(seg, is_start):
+            coords = list(seg.coords)
+            if is_start:
+                coords[0] = (split_point.x, split_point.y)
+            else:
+                coords[-1] = (split_point.x, split_point.y)
+            return LineString(coords)
+
+        if len(results) in {2, 3}:
+            return [create_segment(results[0], False), create_segment(results[1], True)]
+
+        return results
+        # res = split(line, nearest_point)
+        # if nearest_point.distance(split_point) > tor:
+        #     return None
+
+        # res = split(snap(line, nearest_point, tor), split_point)
+
+        # return res
 
     @staticmethod
     def split_line_by_distance(line, origin_dist, end_dist):
@@ -841,53 +879,55 @@ class Algebra:
     @staticmethod
     def split_bisector(extend_point, bisector: VoronoiEdge, last_bisector: VoronoiEdge, e_left, e_right):
         # bisector_geom = bisector.geom
-        if e_left.index == 5 and e_right.index == 8:  # 17 6
+        if e_left.index == 5 and e_right.index == 18:  # 17 6
             print("bisector-debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
 
-        if point_duplicate(bisector.geom.coords[0], extend_point):
-            return bisector
-        elif point_duplicate(bisector.geom.coords[-1], extend_point):
-            return None
-        elif point_duplicate(bisector.geom.coords[0], bisector.geom.coords[-1]):
+        if len(bisector.geom.coords) == 2:
+            if point_duplicate(bisector.geom.coords[0], extend_point):
+                return bisector
+            elif point_duplicate(bisector.geom.coords[-1], extend_point):
+                return None
+        if point_duplicate(bisector.geom.coords[0], bisector.geom.coords[-1]):
             return None
 
         split_point = Point(extend_point)
-        split_lines = Algebra.split_line_by_point(split_point, bisector.geom).geoms
+        split_lines = Algebra.split_line_by_point(split_point, bisector.geom)
+
+        if split_lines is None:
+            return
 
         if len(split_lines) == 1:
-            print("被切割的几何体只有一段，存在错误!")
-            return None
-            # bisector.geom = set_precision(split_lines[0], POINT_PRECISION, mode='pointwise')
-            # return bisector
-
-        if len(split_lines) != 2:
-            return None
-
-        after_point = split_lines[1].interpolate(0.001, normalized=True)  # 往外延伸1%
-
-        def _create_line(point, elem: Element):
-            if isinstance(elem, Vertex):
-                # geom = LineString([point.coords[0], [elem.x, elem.y]])
-                # return set_precision(geom, POINT_PRECISION, mode='pointwise')
-                return LineString([point.coords[0], [elem.x, elem.y]])
-            elif isinstance(elem, Segment):
-                foot_point, _ = Algebra.foot_of_perpendicular(point, elem.geom)
-                # geom = LineString([point.coords[0], foot_point])
-                return LineString([point.coords[0], foot_point])
-                # return set_precision(geom, POINT_PRECISION, mode='pointwise')
-
-        after_line1 = _create_line(after_point, e_left)
-        after_line2 = _create_line(after_point, e_right)
-
-        if ((not after_line1.intersection(last_bisector.geom).is_empty) or
-                (not after_line2.intersection(last_bisector.geom).is_empty)):
+            # print("被切割的几何体只有一段，存在错误!")
+            # return None
             bisector.geom = set_precision(split_lines[0], POINT_PRECISION, mode='pointwise')
-            # return split_lines[0]
+        elif len(split_lines) != 2:
+            return None
         else:
-            bisector.geom = set_precision(split_lines[1], POINT_PRECISION, mode='pointwise')
-            # return split_lines[1]
+            after_point = split_lines[1].interpolate(2 * EQUAL_TOLERANCE, normalized=False)  # 往外延伸1%
+
+            def _create_line(point, elem: Element):
+                if isinstance(elem, Vertex):
+                    # geom = LineString([point.coords[0], [elem.x, elem.y]])
+                    # return set_precision(geom, POINT_PRECISION, mode='pointwise')
+                    return LineString([point.coords[0], [elem.x, elem.y]])
+                elif isinstance(elem, Segment):
+                    foot_point, _ = Algebra.foot_of_perpendicular(point, elem.geom)
+                    # geom = LineString([point.coords[0], foot_point])
+                    return LineString([point.coords[0], foot_point])
+                    # return set_precision(geom, POINT_PRECISION, mode='pointwise')
+
+            after_line1 = _create_line(after_point, e_left)
+            after_line2 = _create_line(after_point, e_right)
+
+            if ((not after_line1.intersection(last_bisector.geom).is_empty) or
+                    (not after_line2.intersection(last_bisector.geom).is_empty)):
+                bisector.geom = set_precision(split_lines[0], POINT_PRECISION, mode='pointwise')
+                # return split_lines[0]
+            else:
+                bisector.geom = set_precision(split_lines[1], POINT_PRECISION, mode='pointwise')
+                # return split_lines[1]
 
         if point_duplicate(bisector.geom.coords[-1], extend_point):
             reversed_coords = list(bisector.geom.coords)[::-1]

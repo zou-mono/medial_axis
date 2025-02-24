@@ -422,4 +422,40 @@ def test_segment_segment():
 
     # Algebra._handle_segment_segment((-2, -2, 2, 2), e1, e2, is_ccw=True)
 
+def test_split_precision():
+    from shapely.geometry import Point, LineString
+    from shapely.ops import nearest_points, split, snap
+
+    # 定义点 A 和 LineString L
+    point_a = Point(4.11344, 5.1696)
+    line_l = LineString([(2.37037, 5.32963), (10, 4.62914)])
+
+    # 找到点 A 到 LineString L 上最近的点
+    nearest_point = nearest_points(point_a, line_l)[1]
+
+    # 计算该点在 LineString 上的距离
+    distance = line_l.project(nearest_point)
+
+    # 在该点处分割 LineString
+    point_on_line = line_l.interpolate(distance)
+
+    # 创建缓冲区
+    buffer = point_on_line.buffer(0.0001)  # 0.0001 是缓冲区的半径，可以根据需要调整
+
+    # 使用缓冲区进行切割
+    result1 = split(snap(line_l, nearest_point, 0.00001), nearest_point)
+    result2 = split(line_l, nearest_point)
+    result3 = split(line_l, buffer)
+    results = list(result3.geoms)
+    del results[1]
+    temp = list(results[0].coords)
+    temp[-1] = (point_a.x, point_a.y)
+    res1 = LineString(temp)
+    temp = list(results[1].coords)
+    temp[0] = (point_a.x, point_a.y)
+    res2 = LineString(temp)
+
+    res = [res1, res2]
+
+    print(res)
 
