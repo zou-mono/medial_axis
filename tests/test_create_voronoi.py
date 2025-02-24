@@ -27,8 +27,8 @@ def test_create_voronoi_simple_polygon(simple_polygon):
     algo = Voronoi()
     poly, param = simple_polygon
 
-    # if not param:
-    algo.create_voronoi_diagram(poly)
+    if not param:
+        algo.create_voronoi_diagram(poly)
 
 
 def test_shapefile_polygon():
