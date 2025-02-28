@@ -168,7 +168,7 @@ class Algorithm:
         extend_point = None
 
         if len(c1.elements) == 1 and len(c2.elements) == 1:
-            if e_left.index == 12 and e_right.index == 5:  # 17 6
+            if e_left.index == 6 and e_right.index == 15:  # 17 6
                 print("debug:{}-{}".format(e_left.index, e_right.index))
             else:
                 pass
@@ -203,7 +203,7 @@ class Algorithm:
                 print("Left: [{}:{}], Right: [{}:{}]".format(e_left.index, e_left, e_right.index,
                                                              e_right))
 
-                if e_left.index == 5 and e_right.index == 18:  # 17 6
+                if e_left.index == 6 and e_right.index == 15:  # 17 6
                     print("debug:{}-{}".format(e_left.index, e_right.index))
                 else:
                     pass
@@ -261,7 +261,7 @@ class Algorithm:
         return c1.merge(c2)
 
     def select_voronoi_edge(self, bisector, e_left, e_right, extend_point):
-        if e_left.index == 5 and e_right.index == 8:  # 17 6
+        if e_left.index == 2 and e_right.index == 3:  # 17 6
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
@@ -368,7 +368,7 @@ class Algorithm:
             distance_left = bisector.geom.project(Point(intersect_left))
             distance_right = bisector.geom.project(Point(intersect_right))
 
-            if round(distance_left, POINT_PRECISION_PLACE) == round(distance_right, POINT_PRECISION_PLACE):
+            if abs(distance_left - distance_right) < 2 * EQUAL_TOLERANCE:
                 if point_duplicate(intersect_left, extend_point):
                     intersect_pt = extend_point
                 else:
@@ -397,7 +397,7 @@ class Algorithm:
 
                 extend_point = intersect_pt
             else:
-                if (distance_left < distance_right and distance_left > 0) or (distance_right == 0):
+                if (distance_left < distance_right and distance_left > EQUAL_TOLERANCE) or (distance_right <= EQUAL_TOLERANCE):
                     if point_duplicate(intersect_left, extend_point):
                         intersect_left = extend_point
                     else:
@@ -417,7 +417,7 @@ class Algorithm:
                     elif bisector.left_element.index == ve_left.left_element.index:
                         e_left = ve_left.right_element
 
-                elif (distance_right < distance_left and distance_right > 0) or (distance_left == 0):
+                elif (distance_right < distance_left and distance_right > EQUAL_TOLERANCE) or (distance_left <= EQUAL_TOLERANCE):
                     if point_duplicate(intersect_right, extend_point):
                         intersect_right = extend_point
                     else:
@@ -495,7 +495,7 @@ class Algorithm:
         if bisector is None:
             return
 
-        if e_left.index == 5 and e_right.index == 8:
+        if e_left.index == 6 and e_right.index == 15:
             print("debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass

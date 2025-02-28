@@ -844,10 +844,9 @@ class Algebra:
         buffer = nearest_point.buffer(tor)
         line_segments = split(line, buffer)
         line_segments = [set_precision(seg, POINT_PRECISION, mode='pointwise') for seg in list(line_segments.geoms)]
-        results = [x for x in list(line_segments) if x.length >= tor]
 
-        if len(results) == 3:
-            results.pop(1)
+        if len(line_segments) == 3:
+            line_segments.pop(1)
 
         # Create two new segments with the split point
         def create_segment(seg, is_start):
@@ -858,8 +857,10 @@ class Algebra:
                 coords[-1] = (split_point.x, split_point.y)
             return LineString(coords)
 
-        if len(results) in {2, 3}:
-            return [create_segment(results[0], False), create_segment(results[1], True)]
+        if len(line_segments) in {2, 3}:
+            return [create_segment(line_segments[0], False), create_segment(line_segments[1], True)]
+
+        results = [x for x in list(line_segments) if x.length >= tor]
 
         return results
         # res = split(line, nearest_point)
@@ -879,7 +880,7 @@ class Algebra:
     @staticmethod
     def split_bisector(extend_point, bisector: VoronoiEdge, last_bisector: VoronoiEdge, e_left, e_right):
         # bisector_geom = bisector.geom
-        if e_left.index == 5 and e_right.index == 18:  # 17 6
+        if e_left.index == 6 and e_right.index == 15:  # 17 6
             print("bisector-debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
