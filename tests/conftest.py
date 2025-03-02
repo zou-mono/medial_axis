@@ -24,8 +24,8 @@ def simple_polygon(create_polygon, request):
     #     (3.5, 4.2)
     # ]
 
-    if not request.param:
-        points.reverse()
+    # if not request.param:
+    #     points.reverse()
 
     return create_polygon(exterior=points), request.param
 

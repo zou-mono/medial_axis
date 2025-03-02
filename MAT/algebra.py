@@ -32,7 +32,7 @@ class Algebra:
     def bisector(self, e1: Union[Element, Vertex, Segment], e2: Union[Element, Vertex, Segment], is_ccw=True):
         geom = None
 
-        if e1.index == 5 and e2.index == 18:  # 17 6
+        if e1.index == 5 and e2.index == 12:  # 17 6
             print("bisector-debug:{}-{}".format(e1.index, e2.index))
         else:
             pass
@@ -132,6 +132,13 @@ class Algebra:
         def calculate_bisector(origin, seg1_origin, seg2_end):
             vector1 = np.array([seg1_origin.x - origin.x, seg1_origin.y - origin.y])
             vector2 = np.array([seg2_end.x - origin.x, seg2_end.y - origin.y])
+            # if is_ccw:
+            #     vector1 = np.array([seg1.origin.x - origin.x, seg1.origin.y - origin.y])
+            #     vector2 = np.array([seg2.end.x - origin.x, seg2.end.y - origin.y])
+            # else:
+            #     vector1 = np.array([seg1.end.x - origin.x, seg1.end.y - origin.y])
+            #     vector2 = np.array([seg2.origin.x - origin.x, seg2.origin.y - origin.y])
+
             direction = Algebra.normalize(Algebra.normalize(vector1) + Algebra.normalize(vector2))
 
             # 共线情况处理
@@ -161,16 +168,24 @@ class Algebra:
         start_vertex = Algebra.intersection_between_segments(segment1, segment2)
         if start_vertex is None:
             # 计算中点作为起点
-            M = np.mean([[segment1.origin.x, segment1.end.x], [segment1.origin.y, segment1.end.y],
-                         [segment2.origin.x, segment2.end.x], [segment2.origin.y, segment2.end.y]], axis=1)
-            start_vertex = Vertex(*M)
+            M = [(segment1.origin.x + segment1.end.x + segment2.origin.x + segment2.end.x) / 4,
+                 (segment1.origin.y + segment1.end.y + segment2.origin.y + segment2.end.y) / 4]
+            start_vertex = Vertex(M[0], M[1])
             direction = np.array([segment1.end.x - segment1.origin.x, segment1.end.y - segment1.origin.y])
 
             bisector_ray = Line(start_vertex, direction)
             return get_segment_from_bisector(bounds, bisector_ray)
 
         # 处理非共点和非平行的情况
-        _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
+        if Algebra.is_point_on_segment(start_vertex, segment1):
+            seg_origin = segment1.origin
+            seg_end = segment2.end
+        else:
+            seg_origin = segment1.end
+            seg_end = segment2.origin
+        _, bisector_ray = calculate_bisector(start_vertex, seg_origin, seg_end)
+
+        # _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
         return get_segment_from_bisector(bounds, bisector_ray)
 
     #  判断两条segment的交点是否在某条segment内部
@@ -227,7 +242,7 @@ class Algebra:
             r_o = r @ (o + np.array([-parabola.vertex.x, -parabola.vertex.y]))
             r_d = r @ (d + np.array([-parabola.vertex.x, -parabola.vertex.y]))
 
-            x = np.linspace(r_o[0], r_d[0], 100)
+            x = np.linspace(r_o[0], r_d[0], 1000)
             y = parabola.func(x)
 
             mat = (parabola.rotate_matrix @ np.vstack((x, y))).T + np.array([parabola.vertex.x, parabola.vertex.y])
@@ -729,9 +744,9 @@ class Algebra:
         ])
         b = np.array([x3 - x1, y3 - y1])
 
-        # 两条线平行
-        if abs(np.cross(d1, d2)) <= np.sin(ANGLE_DIFF_RADIANS) * np.linalg.norm(d1) * np.linalg.norm(d2):
-            return None
+        # # 两条线平行
+        # if abs(np.cross(d1, d2)) <= np.sin(ANGLE_DIFF_RADIANS) * np.linalg.norm(d1) * np.linalg.norm(d2):
+        #     return None
 
         try:
             # 求解线性方程组
@@ -836,12 +851,13 @@ class Algebra:
 
     @staticmethod
     def split_line_by_point(split_point, line, tor=2*EQUAL_TOLERANCE):
-        nearest_point = nearest_points(split_point, line)[1]
+        nearest_point = nearest_points(line, split_point)[0]
 
         if nearest_point.distance(split_point) > tor:
             return None
 
         buffer = nearest_point.buffer(tor)
+
         line_segments = split(line, buffer)
         line_segments = [set_precision(seg, POINT_PRECISION, mode='pointwise') for seg in list(line_segments.geoms)]
 
@@ -880,7 +896,7 @@ class Algebra:
     @staticmethod
     def split_bisector(extend_point, bisector: VoronoiEdge, last_bisector: VoronoiEdge, e_left, e_right):
         # bisector_geom = bisector.geom
-        if e_left.index == 6 and e_right.index == 15:  # 17 6
+        if e_left.index == 2 and e_right.index == 5:  # 17 6
             print("bisector-debug:{}-{}".format(e_left.index, e_right.index))
         else:
             pass
