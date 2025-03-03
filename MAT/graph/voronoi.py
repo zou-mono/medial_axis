@@ -579,8 +579,8 @@ def point_duplicate(pt1: [np.ndarray, Point, Vertex, tuple], pt2: [np.ndarray, P
     if (isinstance(pt1, Point) and not isinstance(pt2, Point)) or (isinstance(pt2, Point) and not isinstance(pt1, Point)):
         raise TypeError("Both input points must be either numpy arrays or shapely Points")
 
-    # if pt1.distance(pt2) <= tolerance:
-    if abs(pt1.x - pt2.x) <= tolerance and abs(pt1.y - pt2.y) <= tolerance:
+    if pt1.distance(pt2) <= tolerance:
+    # if abs(pt1.x - pt2.x) <= tolerance and abs(pt1.y - pt2.y) <= tolerance:
         return True
     else:
         return False

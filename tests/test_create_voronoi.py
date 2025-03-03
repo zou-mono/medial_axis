@@ -46,7 +46,7 @@ def test_shapefile_polygon():
         # 获取几何对象
         geom = feature.GetGeometryRef()
 
-        if icount != 3:
+        if icount != 2:
             icount += 1
             continue
 
