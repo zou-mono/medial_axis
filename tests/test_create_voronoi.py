@@ -19,16 +19,16 @@ def test_create_voronoi_five_star(five_pointed_star):
     algo = Voronoi()
     poly, param = five_pointed_star
 
-    if not param:
-        algo.create_voronoi_diagram(poly)
+    # if not param:
+    algo.create_voronoi_diagram(poly)
 
 
 def test_create_voronoi_simple_polygon(simple_polygon):
     algo = Voronoi()
     poly, param = simple_polygon
 
-    if not param:
-        algo.create_voronoi_diagram(poly)
+    # if not param:
+    algo.create_voronoi_diagram(poly)
 
 
 def test_shapefile_polygon():
@@ -46,7 +46,7 @@ def test_shapefile_polygon():
         # 获取几何对象
         geom = feature.GetGeometryRef()
 
-        if icount != 2:
+        if icount != 0:
             icount += 1
             continue
 

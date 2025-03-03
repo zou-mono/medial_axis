@@ -18,8 +18,9 @@ from MAT.gv import EQUAL_TOLERANCE, EQUAL_RELATIVE_TOLERANCE, POINT_PRECISION, P
 
 
 class Algebra:
-    def __init__(self, bounds=None):
+    def __init__(self, bounds=None, polygon=None):
         self._bounds = bounds
+        self._polygon = polygon
 
     @staticmethod
     def is_in_range(x_min, x, x_max, rel_tol=EQUAL_RELATIVE_TOLERANCE, abs_tol=EQUAL_TOLERANCE):
@@ -38,11 +39,11 @@ class Algebra:
             pass
 
         if isinstance(e1, Vertex) and isinstance(e2, Segment):
-            edge = Algebra._handle_vertex_segment(self._bounds, e1, e2, is_ccw)
+            edge = Algebra._handle_vertex_segment(e1, e2, is_ccw)
         elif isinstance(e1, Segment) and isinstance(e2, Vertex):
-            edge = Algebra._handle_vertex_segment(self._bounds, e2, e1, is_ccw)
+            edge = Algebra._handle_vertex_segment(e2, e1, is_ccw)
         elif isinstance(e1, Segment) and isinstance(e2, Segment):
-            edge = Algebra._handle_segment_segment(self._bounds, e1, e2, is_ccw)
+            edge = Algebra._handle_segment_segment(self._bounds, self._polygon, e1, e2, is_ccw)
         elif isinstance(e1, Vertex) and isinstance(e2, Vertex):
             edge = Algebra._handle_vertex_vertex(e1, e2, is_ccw)
         else:
@@ -128,7 +129,7 @@ class Algebra:
                 return None
 
     @staticmethod
-    def _handle_segment_segment(bounds, segment1, segment2, is_ccw):
+    def _handle_segment_segment(bounds, polygon, segment1, segment2, is_ccw):
         def calculate_bisector(origin, seg1_origin, seg2_end):
             vector1 = np.array([seg1_origin.x - origin.x, seg1_origin.y - origin.y])
             vector2 = np.array([seg2_end.x - origin.x, seg2_end.y - origin.y])
@@ -176,17 +177,41 @@ class Algebra:
             bisector_ray = Line(start_vertex, direction)
             return get_segment_from_bisector(bounds, bisector_ray)
 
-        # 处理非共点和非平行的情况
-        if Algebra.is_point_on_segment(start_vertex, segment1):
-            seg_origin = segment1.origin
-            seg_end = segment2.end
-        else:
-            seg_origin = segment1.end
-            seg_end = segment2.origin
-        _, bisector_ray = calculate_bisector(start_vertex, seg_origin, seg_end)
+       # 处理非共点和非平行的情况
+        _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
+        sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
 
-        # _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
-        return get_segment_from_bisector(bounds, bisector_ray)
+        if sorted_points is None:
+            return None
+
+        if polygon.contains(Point(sorted_points[1][0], sorted_points[1][1])) and \
+                polygon.contains(Point(sorted_points[2][0], sorted_points[2][1])):
+
+            return get_segment_from_bisector(bounds, bisector_ray)
+
+        _, bisector_ray = calculate_bisector(start_vertex, segment1.end, segment2.origin)
+        sorted_points = Algebra.range_of_bisector_ray(segment1, segment2, bisector_ray, is_ccw)
+        if polygon.contains(Point(sorted_points[1][0], sorted_points[1][1])) and \
+                polygon.contains(Point(sorted_points[2][0], sorted_points[2][1])):
+
+            return get_segment_from_bisector(bounds, bisector_ray)
+
+            # new_seg = Segment(Vertex(sorted_points[1][0], sorted_points[1][1]),
+            #                   Vertex(sorted_points[2][0], sorted_points[2][1]))
+
+
+            # return new_seg
+
+        # if Algebra.is_point_on_segment(start_vertex, segment1):
+        #     seg_origin = segment1.origin
+        #     seg_end = segment2.end
+        # else:
+        #     seg_origin = segment1.end
+        #     seg_end = segment2.origin
+        # _, bisector_ray = calculate_bisector(start_vertex, seg_origin, seg_end)
+        #
+        # # _, bisector_ray = calculate_bisector(start_vertex, segment1.origin, segment2.end)
+        # return get_segment_from_bisector(bounds, bisector_ray)
 
     #  判断两条segment的交点是否在某条segment内部
     @staticmethod
@@ -225,7 +250,7 @@ class Algebra:
         return Line(Vertex(midpoint[0], midpoint[1]), perpendicular_direction)
 
     @staticmethod
-    def _handle_vertex_segment(bounds, vertex, segment, is_ccw):
+    def _handle_vertex_segment(vertex, segment, is_ccw):
         if vertex.key == segment.origin.key:
             vector = np.array([segment.end.x - segment.origin.x, segment.end.y - segment.origin.y])
             direction = Algebra.compute_direction(vector, is_ccw)

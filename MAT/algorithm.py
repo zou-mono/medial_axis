@@ -214,7 +214,7 @@ class Algorithm:
                 if (e_left.index, e_right.index) in self.bisector_dict or (e_right.index, e_left.index) in self.bisector_dict:
                     break
 
-                alg = Algebra(self.bounds)
+                alg = Algebra(self.bounds, self.polygon)
 
                 if bisector is not None:
                     last_bisector = bisector
